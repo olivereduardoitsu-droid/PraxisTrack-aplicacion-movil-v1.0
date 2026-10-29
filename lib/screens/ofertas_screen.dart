@@ -13,34 +13,28 @@ class OfertasScreen extends StatefulWidget {
 
 class _OfertasScreenState extends State<OfertasScreen> {
   final ApiService _apiService = ApiService();
-  late Future<List<Oferta>> _futureOfertas;
+  late Future<List<Oferta>> _ofertasFuture;
+
+  String filtroSeleccionado = 'Todos';
+  String queryBusqueda = '';
 
   @override
   void initState() {
     super.initState();
-    _futureOfertas = _apiService.getOfertas();
-  }
-
-  void _postularse(String tituloOferta) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Postulación enviada con éxito a: $tituloOferta'),
-        backgroundColor: const Color(0xFFE59C3B),
-      ),
-    );
+    _ofertasFuture = _apiService.getOfertas();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF140D0E),
       appBar: AppBar(
         title: const Text('PraxisTrack - Marketplace'),
-        backgroundColor: const Color(0xFF1A1112),
-        foregroundColor: const Color(0xFFF3C677),
+        backgroundColor: const Color(0xFF140D0E),
+        elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.assignment_outlined),
-            tooltip: 'Ir a Bitácora',
+            icon: const Icon(Icons.assignment, color: Color(0xFFE59C3B)),
             onPressed: () {
               Navigator.push(
                 context,
@@ -51,366 +45,379 @@ class _OfertasScreenState extends State<OfertasScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF261618),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFF5A3230), width: 1),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Mi Progreso de Prácticas',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF3D2314),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: const Text(
-                            '71%',
-                            style: TextStyle(
-                              color: Color(0xFFE59C3B),
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 1. Panel de Progreso
+            _buildPanelProgreso(),
+            const SizedBox(height: 20),
+
+            // 2. Buscador y Filtros
+            _buildBarraBusquedaYFiltros(),
+            const SizedBox(height: 20),
+
+            // 3. Título de la sección
+            const Text(
+              'Oportunidades Disponibles',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // 4. Lista de Ofertas
+            FutureBuilder<List<Oferta>>(
+              future: _ofertasFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: Color(0xFFE59C3B)),
+                  );
+                } else if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      'Error: ${snapshot.error}',
+                      style: const TextStyle(color: Colors.red),
                     ),
-                    const SizedBox(height: 12),
-                    const Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        Column(
-                          children: [
-                            Text(
-                              '348 hrs',
-                              style: TextStyle(
-                                color: Color(0xFFE59C3B),
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              'APROBADAS',
-                              style: TextStyle(
-                                color: Colors.white54,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(
-                          height: 30,
-                          child: VerticalDivider(color: Colors.white24),
-                        ),
-                        Column(
-                          children: [
-                            Text(
-                              '148 hrs',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              'RESTANTES',
-                              style: TextStyle(
-                                color: Colors.white54,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                  );
+                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      'No hay vacantes disponibles.',
+                      style: TextStyle(color: Colors.grey),
                     ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF3D2314),
-                          foregroundColor: const Color(0xFFE59C3B),
-                          side: const BorderSide(
-                            color: Color(0xFFE59C3B),
-                            width: 0.5,
-                          ),
-                        ),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const BitacoraScreen(),
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.edit_calendar, size: 18),
-                        label: const Text('Ver / Registrar Bitácora Completa'),
+                  );
+                }
+
+                // Filtrado seguro con comprobación de nulos (?? '')
+                final ofertasFiltradas = snapshot.data!.where((oferta) {
+                  final titulo = (oferta.titulo).toLowerCase();
+                  final empresa = (oferta.empresa ?? '').toLowerCase();
+                  final modalidad = (oferta.modalidad).toLowerCase();
+                  final query = queryBusqueda.toLowerCase();
+
+                  final coincideBusqueda =
+                      titulo.contains(query) ||
+                      empresa.contains(query) ||
+                      oferta.tags.any(
+                        (tag) => tag.toLowerCase().contains(query),
+                      );
+
+                  if (filtroSeleccionado == 'Todos') {
+                    return coincideBusqueda;
+                  } else if (filtroSeleccionado == 'Remoto') {
+                    return coincideBusqueda && modalidad.contains('remoto');
+                  } else {
+                    return coincideBusqueda &&
+                        (titulo.contains(filtroSeleccionado.toLowerCase()) ||
+                            oferta.tags.any(
+                              (t) => t.toLowerCase().contains(
+                                filtroSeleccionado.toLowerCase(),
+                              ),
+                            ));
+                  }
+                }).toList();
+
+                if (ofertasFiltradas.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Center(
+                      child: Text(
+                        'No se encontraron coincidencias',
+                        style: TextStyle(color: Colors.grey),
                       ),
                     ),
-                  ],
+                  );
+                }
+
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: ofertasFiltradas.length,
+                  itemBuilder: (context, index) {
+                    final oferta = ofertasFiltradas[index];
+                    return _buildTarjetaOferta(oferta);
+                  },
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPanelProgreso() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF261618),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: const [
+              Text(
+                'Mi Progreso de Prácticas',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
               ),
-              const SizedBox(height: 20),
-              const Text(
-                'Oportunidades Disponibles',
+              Text(
+                '71%',
                 style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
+                  color: Color(0xFFE59C3B),
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 4),
-              const Text(
-                'Vacantes pre-aprobadas y auditadas para acreditación.',
-                style: TextStyle(color: Colors.white54, fontSize: 12),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              Column(
+                children: const [
+                  Text(
+                    '348 hrs',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Text(
+                    'APROBADAS',
+                    style: TextStyle(fontSize: 10, color: Colors.grey),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              FutureBuilder<List<Oferta>>(
-                future: _futureOfertas,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(20.0),
-                        child: CircularProgressIndicator(
-                          color: Color(0xFFE59C3B),
-                        ),
-                      ),
-                    );
-                  } else if (snapshot.hasError) {
-                    return Center(
-                      child: Text(
-                        'Error: ${snapshot.error}',
-                        style: const TextStyle(color: Colors.red),
-                      ),
-                    );
-                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Center(
-                      child: Text(
-                        'No hay ofertas disponibles.',
-                        style: TextStyle(color: Colors.white70),
-                      ),
-                    );
-                  }
-
-                  final ofertas = snapshot.data!;
-                  return ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: ofertas.length,
-                    itemBuilder: (context, index) {
-                      final oferta = ofertas[index];
-                      return Card(
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        color: const Color(0xFF261618),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: const BorderSide(
-                            color: Color(0xFF5A3230),
-                            width: 1,
-                          ),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      oferta.empresa ?? 'Empresa',
-                                      style: const TextStyle(
-                                        color: Colors.white60,
-                                        fontSize: 13,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF3D2314),
-                                      borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(
-                                        color: const Color(0xFFE59C3B),
-                                        width: 0.5,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      '🔥 ${oferta.matchScore}',
-                                      style: const TextStyle(
-                                        color: Color(0xFFE59C3B),
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                oferta.titulo,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                oferta.descripcion,
-                                style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 13,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.monetization_on_outlined,
-                                    size: 14,
-                                    color: Color(0xFFE59C3B),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    oferta.salario,
-                                    style: const TextStyle(
-                                      color: Colors.white60,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  const Icon(
-                                    Icons.access_time,
-                                    size: 14,
-                                    color: Color(0xFFE59C3B),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    oferta.horas,
-                                    style: const TextStyle(
-                                      color: Colors.white60,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  const Icon(
-                                    Icons.location_on_outlined,
-                                    size: 14,
-                                    color: Color(0xFFE59C3B),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    oferta.modalidad,
-                                    style: const TextStyle(
-                                      color: Colors.white60,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              Wrap(
-                                spacing: 6,
-                                runSpacing: 4,
-                                children: oferta.tags.map((tag) {
-                                  return Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF1A1112),
-                                      borderRadius: BorderRadius.circular(4),
-                                      border: Border.all(color: Colors.white12),
-                                    ),
-                                    child: Text(
-                                      tag,
-                                      style: const TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-                              const SizedBox(height: 14),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        oferta.estadoPostulacion == 'Postularme'
-                                        ? const Color(0xFFE59C3B)
-                                        : const Color(0xFF3D2314),
-                                    foregroundColor:
-                                        oferta.estadoPostulacion == 'Postularme'
-                                        ? Colors.black87
-                                        : const Color(0xFFE59C3B),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                      side:
-                                          oferta.estadoPostulacion !=
-                                              'Postularme'
-                                          ? const BorderSide(
-                                              color: Color(0xFFE59C3B),
-                                              width: 0.5,
-                                            )
-                                          : BorderSide.none,
-                                    ),
-                                  ),
-                                  onPressed:
-                                      oferta.estadoPostulacion == 'Postularme'
-                                      ? () => _postularse(oferta.titulo)
-                                      : null,
-                                  child: Text(
-                                    oferta.estadoPostulacion,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
+              Container(height: 25, width: 1, color: Colors.grey[700]),
+              Column(
+                children: const [
+                  Text(
+                    '148 hrs',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Text(
+                    'RESTANTES',
+                    style: TextStyle(fontSize: 10, color: Colors.grey),
+                  ),
+                ],
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          OutlinedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const BitacoraScreen()),
+              );
+            },
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: Color(0xFFE59C3B)),
+              minimumSize: const Size(double.infinity, 36),
+            ),
+            child: const Text(
+              'Ver / Registrar Bitácora Completa',
+              style: TextStyle(color: Color(0xFFE59C3B)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBarraBusquedaYFiltros() {
+    final filtros = ['Todos', 'Backend', 'Fullstack', 'Remoto'];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          onChanged: (val) => setState(() => queryBusqueda = val),
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: 'Buscar por rol, stack (Go, PostgreSQL), empresa...',
+            hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+            prefixIcon: const Icon(Icons.search, color: Color(0xFFE59C3B)),
+            filled: true,
+            fillColor: const Color(0xFF261618),
+            contentPadding: const EdgeInsets.symmetric(vertical: 10),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide.none,
+            ),
+          ),
         ),
+        const SizedBox(height: 12),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: filtros.map((filtro) {
+              final activo = filtroSeleccionado == filtro;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: ChoiceChip(
+                  label: Text(filtro),
+                  selected: activo,
+                  selectedColor: const Color(0xFFE59C3B),
+                  backgroundColor: const Color(0xFF261618),
+                  labelStyle: TextStyle(
+                    color: activo ? Colors.black : Colors.white,
+                    fontWeight: activo ? FontWeight.bold : FontWeight.normal,
+                  ),
+                  onSelected: (bool selected) {
+                    setState(() => filtroSeleccionado = filtro);
+                  },
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTarjetaOferta(Oferta oferta) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF261618),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  oferta.empresa ?? '', // Protección de nulos aquí
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withAlpha(50),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '🔥 ${oferta.matchScore}',
+                  style: const TextStyle(
+                    color: Color(0xFFE59C3B),
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            oferta.titulo,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            oferta.descripcion,
+            style: const TextStyle(color: Colors.grey, fontSize: 12),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Text(
+                oferta.salario,
+                style: const TextStyle(
+                  color: Color(0xFFE59C3B),
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                '⏱ ${oferta.horas}',
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                '📍 ${oferta.modalidad}',
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: oferta.tags.map((tag) {
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.white10,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  tag,
+                  style: const TextStyle(color: Colors.white70, fontSize: 10),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerRight,
+            child: oferta.estadoPostulacion == 'Postularme'
+                ? ElevatedButton(
+                    onPressed: () {},
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE59C3B),
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    child: const Text(
+                      'Postularme',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  )
+                : OutlinedButton(
+                    onPressed: null,
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.grey),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    child: Text(
+                      oferta.estadoPostulacion,
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                  ),
+          ),
+        ],
       ),
     );
   }
